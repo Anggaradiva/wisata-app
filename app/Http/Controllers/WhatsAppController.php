@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class WhatsAppController extends Controller
 {
@@ -18,13 +20,17 @@ class WhatsAppController extends Controller
 
             $nota = $this->formatNota($booking);
 
-            // TESTING MODE - Simpan ke file & log
+            // TESTING MODE - Simpan ke file TXT (yang sudah ada)
             $this->saveNotaToFile($booking, $nota);
+            
+            // BARU: Generate PDF
+            $pdfPath = $this->generatePDF($booking);
             
             Log::info('✅ Nota berhasil dibuat (Testing Mode)', [
                 'booking_id' => $bookingId,
                 'kode_booking' => $booking->kode_booking,
                 'phone' => $booking->no_hp,
+                'pdf_path' => $pdfPath,
                 'timestamp' => now()->toDateTimeString()
             ]);
 
@@ -35,7 +41,9 @@ class WhatsAppController extends Controller
                     'booking_id' => $booking->id,
                     'kode_booking' => $booking->kode_booking,
                     'nota_preview' => $nota,
-                    'nota_file' => asset("storage/notas/nota_{$booking->kode_booking}.txt")
+                    'nota_file' => asset("storage/notas/nota_{$booking->kode_booking}.txt"),
+                    'pdf_file' => $pdfPath,
+                    'pdf_url' => Storage::url($pdfPath)
                 ]
             ]);
 
@@ -139,6 +147,35 @@ Selamat menikmati liburan Anda! 🙏
         } catch (\Exception $e) {
             Log::error('❌ Error saving nota to file: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    private function generatePDF($booking)
+    {
+        try {
+            // Generate PDF dari view
+            $pdf = Pdf::loadView('pdf.nota', ['booking' => $booking]);
+            
+            // Set paper size dan orientasi
+            $pdf->setPaper('a4', 'portrait');
+            
+            $fileName = 'notas/nota-' . $booking->kode_booking . '.pdf';
+            
+            // Simpan PDF ke storage/app/public/notas
+            Storage::disk('public')->put($fileName, $pdf->output());
+            
+            Log::info('📄 PDF generated successfully', [
+                'file' => $fileName,
+                'path' => Storage::disk('public')->path($fileName)
+            ]);
+
+            return $fileName;
+        } catch (\Exception $e) {
+            Log::error('❌ Error generating PDF', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
         }
     }
 }

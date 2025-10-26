@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class BookingController extends Controller
@@ -51,7 +52,7 @@ class BookingController extends Controller
                 'kendaraan_id' => 'required|exists:kendaraan,id',
                 'sopir_id' => 'nullable|exists:sopir,id',
                 'tanggal_berangkat' => 'required|date|after_or_equal:today',
-                'tanggal_kembali' => 'required|date|after:tanggal_berangkat',
+                'tanggal_kembali' => 'required|date|after_or_equal:tanggal_berangkat',
                 'jumlah_orang' => 'required|integer|min:1',
             ]);
 
@@ -81,10 +82,27 @@ class BookingController extends Controller
                 'total_harga' => $booking->total_harga
             ]);
 
+            // Generate nota (TXT + PDF) - FIXED!
+            $notaData = null;
+            try {
+                $whatsappController = app()->make(WhatsAppController::class);
+                $notaResponse = $whatsappController->sendNota($request, $booking->id);
+                $notaData = $notaResponse->getData();
+            } catch (\Exception $e) {
+                Log::error('Error generating nota', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Booking berhasil dibuat',
-                'data' => $booking->load(['tempatWisata', 'kendaraan', 'sopir'])
+                'data' => [
+                    'booking' => $booking->load(['tempatWisata', 'kendaraan', 'sopir']),
+                    'nota' => $notaData,
+                    'redirect_url' => route('booking.success', $booking->id)
+                ]
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -130,6 +148,32 @@ class BookingController extends Controller
                 'success' => false,
                 'message' => 'Booking tidak ditemukan'
             ], 404);
+        }
+    }
+
+    public function success($id)
+    {
+        try {
+            $booking = Booking::with(['tempatWisata', 'kendaraan', 'sopir'])
+                ->findOrFail($id);
+
+            $pdfUrl = Storage::url('notas/nota-' . $booking->kode_booking . '.pdf');
+
+            Log::info('Success page loaded', [
+                'booking_id' => $id,
+                'kode_booking' => $booking->kode_booking
+            ]);
+
+            return Inertia::render('Booking/Success', [
+                'booking' => $booking,
+                'pdfUrl' => $pdfUrl
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error loading success page', [
+                'booking_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('home')->with('error', 'Booking tidak ditemukan');
         }
     }
 }

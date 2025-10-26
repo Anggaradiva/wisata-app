@@ -83,48 +83,17 @@ export default function BookingIndex({ tempatWisata, kendaraan, sopir }) {
             console.log('✅ Booking response:', response.data);
             
             if (response.data.success) {
-                const bookingId = response.data.data.id;
-                const bookingCode = response.data.data.kode_booking;
+                const bookingId = response.data.data.booking.id;
+                const redirectUrl = response.data.data.redirect_url;
                 
-                console.log('📱 Sending nota to WhatsApp (Testing Mode)...');
+                console.log('✅ Booking berhasil! Redirecting to success page...');
                 
-                try {
-                    const notaResponse = await axios.post(`/whatsapp/send/${bookingId}`);
-                    console.log('✅ Nota response:', notaResponse.data);
-                    
-                    if (notaResponse.data.success) {
-                        alert(`✅ BOOKING BERHASIL!\n\nKode Booking: ${bookingCode}\n\n${notaResponse.data.message}\n\nNota telah disimpan di: storage/app/public/notas/\n\nCek Console (F12) untuk detail nota.`);
-                        
-                        console.log('📄 NOTA PREVIEW:\n', notaResponse.data.data.nota_preview);
-                        console.log('📂 Nota file:', notaResponse.data.data.nota_file);
-                    }
-                } catch (waError) {
-                    console.error('❌ WhatsApp Error:', waError);
-                    console.error('Error details:', waError.response?.data);
-                    alert(`⚠️ Booking berhasil!\n\nKode: ${bookingCode}\n\nNamun gagal membuat nota.\nCheck console (F12) untuk detail error.`);
-                }
-
-                // Reset form
-                setFormData({
-                    nama_pemesan: '',
-                    no_hp: '',
-                    email: '',
-                    tempat_wisata_id: '',
-                    kendaraan_id: '',
-                    sopir_id: '',
-                    tanggal_berangkat: '',
-                    tanggal_kembali: '',
-                    jumlah_orang: 1,
-                });
-                setSelectedWisata(null);
-                setSelectedKendaraan(null);
-                setSelectedSopir(null);
-                setEstimasiHarga(0);
-                setCurrentStep(1);
+                // REDIRECT ke halaman success (BUKAN ALERT!)
+                window.location.href = redirectUrl;
             }
         } catch (error) {
             console.error('❌ Booking Error:', error);
-            console.error('Error response:', error.response?.data);
+            console.error('Error details:', error.response?.data);
             
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
