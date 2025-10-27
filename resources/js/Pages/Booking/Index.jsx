@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
+import AIChat from '@/Components/AIChat';
 
 export default function BookingIndex({ tempatWisata, kendaraan, sopir }) {
     const [currentStep, setCurrentStep] = useState(1);
@@ -88,7 +89,6 @@ export default function BookingIndex({ tempatWisata, kendaraan, sopir }) {
                 
                 console.log('✅ Booking berhasil! Redirecting to success page...');
                 
-                // REDIRECT ke halaman success (BUKAN ALERT!)
                 window.location.href = redirectUrl;
             }
         } catch (error) {
@@ -671,6 +671,9 @@ export default function BookingIndex({ tempatWisata, kendaraan, sopir }) {
                     </div>
                 </div>
             </div>
+
+            {/* AI Chat Component */}
+            <AIChat />
 
             {/* CSS Animation */}
             <style>{`

@@ -1,3 +1,4 @@
+//Success.jsx
 import { Head } from '@inertiajs/react';
 
 export default function BookingSuccess({ booking, pdfUrl }) {

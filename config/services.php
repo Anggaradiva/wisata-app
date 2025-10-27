@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Groq AI Service Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for Groq AI API integration. Used for AI-powered chatbot
+    | and travel recommendation features. Get your free API key from:
+    | https://console.groq.com/
+    |
+    */
+
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+        'fallback_model' => env('GROQ_FALLBACK_MODEL', 'mixtral-8x7b-32768'),
+    ],
+
 ];
